@@ -2,13 +2,17 @@
 
 import sys
 
+LDI = 0b10000010  # LDI R0,8
+PRN = 0b01000111  # PRN R0
+HLT = 0b00000001
+
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        self.register = [0] * 8
+        self.reg = [0] * 8
         self.ram = [0] * 256
         self.pc = 0
 
@@ -68,6 +72,29 @@ class CPU:
 
         print()
 
+    def hlt(self):
+        return False
+
+    def ldi(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        self.reg[operand_a] = operand_b
+        self.pc += 3
+
+    def prn(self):
+        reg_num = self.ram_read(self.pc + 1)
+        print(self.reg[reg_num])
+        self.pc += 2
+
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        while running:
+            ir = self.pc
+            inst = self.ram[ir]
+            if inst == LDI:
+                self.ldi()
+            elif inst == PRN:
+                self.prn()
+            elif inst == HLT:
+                self.hlt()
