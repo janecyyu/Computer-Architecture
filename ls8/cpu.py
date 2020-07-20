@@ -73,7 +73,7 @@ class CPU:
         print()
 
     def hlt(self):
-        return False
+        self.running = False
 
     def ldi(self):
         operand_a = self.ram_read(self.pc + 1)
@@ -88,8 +88,8 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        running = True
-        while running:
+        self.running = True
+        while self.running:
             ir = self.pc
             inst = self.ram[ir]
             if inst == LDI:
