@@ -98,11 +98,6 @@ class CPU:
 
         print()
 
-    # def jmp(self):
-    #     '''Jump to the address stored in the given register.'''
-    #     jmp = self.reg[self.ram[self.pc + 1]]
-    #     self.pc = jmp
-
     def call(self):
         # get addredd of the next instruction
         return_addr = self.pc + 2
