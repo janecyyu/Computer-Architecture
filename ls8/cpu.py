@@ -1,14 +1,17 @@
 """CPU functionality."""
 
 import sys
-# print(sys.argv[0])
-# print(sys.argv[1])
-LDI = 0b10000010  # LDI R0,8
-PRN = 0b01000111  # PRN R0
+
+LDI = 0b10000010  # LDI
+PRN = 0b01000111  # PRN
 HLT = 0b00000001
-MUL = 0b10100010  # MUL R0,R1
-PUSH = 0b01000101  # PUSH R0
-POP = 0b01000110  # POP R2
+MUL = 0b10100010  # MUL
+PUSH = 0b01000101  # PUSH
+POP = 0b01000110  # POP
+CALL = 0b01010000  # CALL
+RET = 0b00010001  # RET
+JMP = 0b01010100  # JMP
+ADD = 0b10100000
 SP = 7
 
 
@@ -28,6 +31,9 @@ class CPU:
         self.branchtable[MUL] = self.mul
         self.branchtable[PUSH] = self.push
         self.branchtable[POP] = self.pop
+        self.branchtable[CALL] = self.call
+        self.branchtable[RET] = self.ret
+        self.branchtable[ADD] = self.add
 
     def ram_read(self, address):
         return self.ram[address]
@@ -92,25 +98,61 @@ class CPU:
 
         print()
 
+    # def jmp(self):
+    #     '''Jump to the address stored in the given register.'''
+    #     jmp = self.reg[self.ram[self.pc + 1]]
+    #     self.pc = jmp
+
+    def call(self):
+        # get addredd of the next instruction
+        return_addr = self.pc + 2
+
+        # push that on the stack
+        self.reg[SP] -= 1
+        addr_to_push_to = self.reg[SP]
+        self.ram[addr_to_push_to] = return_addr
+
+        # set the pc to the subroutine address
+        reg_num = self.ram[self.pc + 1]
+        sub_addr = self.reg[reg_num]
+
+        self.pc = sub_addr
+
+    def ret(self):
+        # get return address from the top of the stack
+        address_pop_from = self.reg[SP]
+        return_addr = self.ram[address_pop_from]
+        self.reg[SP] += 1
+
+        # set the PC to the return address
+        self.pc = return_addr
+
+    # sent to stack
     def push(self):
+        # decrement stack pointer
         self.reg[SP] -= 1
 
+        # get register value
         reg_num = self.ram_read(self.pc + 1)
         value = self.reg[reg_num]
-        # print(self.reg[SP])
+
+        # Store in memory
         push_to = self.reg[SP]
-        print(push_to)
         self.ram[push_to] = value
 
         self.pc += 2
 
+    # sent from stack
     def pop(self):
+        # Get value from RAM
         address_pop_from = self.reg[SP]
         value = self.ram[address_pop_from]
 
+        # Store in the given register
         reg_num = self.ram[self.pc + 1]
         self.reg[reg_num] = value
 
+        # Increment SP
         self.reg[SP] += 1
 
         self.pc += 2
@@ -119,6 +161,12 @@ class CPU:
         operand_a = self.ram_read(self.pc + 1)
         operand_b = self.ram_read(self.pc + 2)
         self.alu("MUL", operand_a, operand_b)
+        self.pc += 3
+
+    def add(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        self.alu("ADD", operand_a, operand_b)
         self.pc += 3
 
     def hlt(self):
@@ -142,9 +190,3 @@ class CPU:
             ir = self.pc
             inst = self.ram[ir]
             self.branchtable[inst]()
-            # if inst == LDI:
-            #     self.ldi()
-            # elif inst == PRN:
-            #     self.prn()
-            # elif inst == HLT:
-            #     self.hlt()
