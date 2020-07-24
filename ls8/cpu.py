@@ -1,20 +1,20 @@
 """CPU functionality."""
 
 import sys
-
+HLT = 0b00000001
 LDI = 0b10000010
 PRN = 0b01000111
-HLT = 0b00000001
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
-CALL = 0b01010000
+CALL = 0b01010000  # 00000rrr
 RET = 0b00010001
-ADD = 0b10100000
+ADD = 0b10100000  # 00000aaa 00000bbb
 CMP = 0b10100111
 JMP = 0b01010100
-JEQ = 0b01010101
 JNE = 0b01010110
+JEQ = 0b01010101
+
 AND = 0b10101000
 OR = 0b10101010
 SP = 7
@@ -25,9 +25,11 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.reg = [0] * 8
+        self.reg = [0] * 9
         self.ram = [0] * 256
-        self.pc = 0
+        self.pc = 0    # program counter
+        self.reg[7] = self.ram[0xF4]   # set default f4 in register 7
+        self.sp = self.reg[7]  # sp == stackpointer
         self.branchtable = {}
         self.branchtable[HLT] = self.hlt
         self.branchtable[LDI] = self.ldi
@@ -78,6 +80,11 @@ class CPU:
             print(f"Couldn't find file {sys.argv[1]}")
             sys.exit(1)
 
+    def add(self):
+        register1 = self.ram[self.pc + 1]
+        register2 = self.ram[self.pc + 2]
+        self.alu("ADD", register1, register2)
+        self.pc += 3
     # *************************************************
     # Sprint Challenge
     # *************************************************
@@ -87,14 +94,16 @@ class CPU:
         self.pc = self.reg[register]
 
     def jeq(self):
-        if self.fl > 0:
-            self.jmp()
+        register = self.ram[self.pc + 1]
+        if (self.fl & HLT) > 0:
+            self.pc = self.reg[register]
         else:
             self.pc += 2
 
     def jne(self):
-        if self.fl == 0:
-            self.jmp()
+        register = self.ram[self.pc + 1]
+        if (self.fl & HLT) == 0:
+            self.pc = self.reg[register]
         else:
             self.pc += 2
 
@@ -105,17 +114,19 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
 
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
+            self.reg[reg_a] = self.reg[reg_a] * self.reg[reg_b]
 
         elif op == "CMP":
             register_a = self.reg[reg_a]
             register_b = self.reg[reg_b]
-            if register_a == register_b:
+
+            # 'FL' bits = '00000LGE'
+            if register_a == register_b:  # E
                 self.fl = 0b00000001
-            elif register_a > register_b:
-                self.fl = 0b00000001
-            elif register_a < register_b:
-                self.fl = 0b00000001
+            elif register_a > register_b:  # G
+                self.fl = 0b00000010
+            elif register_a < register_b:  # L
+                self.fl = 0b00000100
 
         # stretch:
         elif op == "AND":
@@ -136,9 +147,9 @@ class CPU:
             raise Exception("Unsupported ALU operation")
 
     def cmp(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
-        self.alu("CMP", operand_a, operand_b)
+        register1 = self.ram[self.pc + 1]
+        register2 = self.ram[self.pc + 2]
+        self.alu("CMP", register1, register2)
         self.pc += 3
 
     def and_a_b(self):
@@ -234,12 +245,6 @@ class CPU:
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
 
-    def add(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
-        self.alu("ADD", operand_a, operand_b)
-        self.pc += 3
-
     def hlt(self):
         self.running = False
 
@@ -258,6 +263,4 @@ class CPU:
         """Run the CPU."""
         self.running = True
         while self.running:
-            ir = self.pc
-            inst = self.ram[ir]
-            self.branchtable[inst]()
+            self.branchtable[self.ram[self.pc]]()
