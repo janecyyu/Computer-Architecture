@@ -16,6 +16,7 @@ JMP = 0b01010100
 JEQ = 0b01010101
 JNE = 0b01010110
 AND = 0b10101000
+OR = 0b10101010
 SP = 7
 
 
@@ -124,6 +125,13 @@ class CPU:
                 # store the result in registerA
                 register_a = register_a and register_b
 
+        elif op == "OR":
+            register_a = self.reg[reg_a]
+            register_b = self.reg[reg_b]
+            if register_a or register_b:
+                # store the result in registerA
+                register_a = register_a or register_b
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -139,6 +147,11 @@ class CPU:
         self.alu("AND", operand_a, operand_b)
         self.pc += 3
 
+    def or_a_b(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        self.alu("OR", operand_a, operand_b)
+        self.pc += 3
     # **********************************************
 
     def trace(self):
