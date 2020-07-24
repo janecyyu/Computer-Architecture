@@ -117,7 +117,7 @@ class CPU:
             elif register_a < register_b:
                 self.fl = 0b00000001
 
-        # stretch
+        # stretch:
         elif op == "AND":
             register_a = self.reg[reg_a]
             register_b = self.reg[reg_b]
