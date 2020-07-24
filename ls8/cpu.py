@@ -2,19 +2,19 @@
 
 import sys
 
-LDI = 0b10000010  # LDI
-PRN = 0b01000111  # PRN
+LDI = 0b10000010
+PRN = 0b01000111
 HLT = 0b00000001
-MUL = 0b10100010  # MUL
-PUSH = 0b01000101  # PUSH
-POP = 0b01000110  # POP
-CALL = 0b01010000  # CALL
-RET = 0b00010001  # RET
+MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
 ADD = 0b10100000
-CMP = 0b10100111  # CMP
-JMP = 0b01010100  # JMP
-JEQ = 0b01010101  # JEQ R2
-JNE = 0b01010110  # JNE R2
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 SP = 7
 
 
@@ -26,10 +26,6 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.pc = 0
-        self.sp = 7
-        self.e_flag = 0
-        self.l_flag = 0
-        self.g_flag = 0
         self.branchtable = {}
         self.branchtable[HLT] = self.hlt
         self.branchtable[LDI] = self.ldi
@@ -40,6 +36,12 @@ class CPU:
         self.branchtable[CALL] = self.call
         self.branchtable[RET] = self.ret
         self.branchtable[ADD] = self.add
+        # Sprint
+        self.fl = 0b00000000  # default flag
+        self.branchtable[JMP] = self.jmp
+        self.branchtable[JEQ] = self.jeq
+        self.branchtable[JNE] = self.jne
+        self.branchtable[CMP] = self.cmp
 
     def ram_read(self, address):
         return self.ram[address]
@@ -73,17 +75,25 @@ class CPU:
             print(f"Couldn't find file {sys.argv[1]}")
             sys.exit(1)
 
-    def E_flag(self, value):
-        if value == 1:
-            self.e_flag = 1
+    # *************************************************
+    # Sprint Challenge
+    # *************************************************
 
-    def L_flag(self, value):
-        if value == 1:
-            self.l_flag = 1
+    def jmp(self):
+        register = self.ram[self.pc + 1]
+        self.pc = self.reg[register]
 
-    def G_flag(self, value):
-        if value == 1:
-            self.g_flag = 1
+    def jeq(self):
+        if self.fl > 0:
+            self.jmp()
+        else:
+            self.pc += 2
+
+    def jne(self):
+        if self.fl == 0:
+            self.jmp()
+        else:
+            self.pc += 2
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -93,20 +103,24 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "CMP":
-            if reg_a == reg_b:
-                self.E_flag(1)
-            if reg_a > reg_b:
-                self.G_flag(1)
-            if reg_b > reg_a:
-                self.L_flag(1)
+            register_a = self.reg[reg_a]
+            register_b = self.reg[reg_b]
+            if register_a == register_b:
+                self.fl = 0b00000001
+            elif register_a > register_b:
+                self.fl = 0b00000001
+            elif register_a < register_b:
+                self.fl = 0b00000001
         else:
             raise Exception("Unsupported ALU operation")
 
-    def CMP(self):
+    def cmp(self):
         operand_a = self.ram_read(self.pc + 1)
         operand_b = self.ram_read(self.pc + 2)
         self.alu("CMP", operand_a, operand_b)
         self.pc += 3
+
+    # **********************************************
 
     def trace(self):
         """
