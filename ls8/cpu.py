@@ -15,6 +15,7 @@ CMP = 0b10100111
 JMP = 0b01010100
 JEQ = 0b01010101
 JNE = 0b01010110
+AND = 0b10101000
 SP = 7
 
 
@@ -38,6 +39,7 @@ class CPU:
         self.branchtable[ADD] = self.add
         # Sprint
         self.fl = 0b00000000  # default flag
+        self.branchtable[AND] = self.and_a_b
         self.branchtable[JMP] = self.jmp
         self.branchtable[JEQ] = self.jeq
         self.branchtable[JNE] = self.jne
@@ -100,8 +102,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+
         elif op == "CMP":
             register_a = self.reg[reg_a]
             register_b = self.reg[reg_b]
@@ -111,6 +115,15 @@ class CPU:
                 self.fl = 0b00000001
             elif register_a < register_b:
                 self.fl = 0b00000001
+
+        # stretch
+        elif op == "AND":
+            register_a = self.reg[reg_a]
+            register_b = self.reg[reg_b]
+            if register_a and register_b:
+                # store the result in registerA
+                register_a = register_a and register_b
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -118,6 +131,12 @@ class CPU:
         operand_a = self.ram_read(self.pc + 1)
         operand_b = self.ram_read(self.pc + 2)
         self.alu("CMP", operand_a, operand_b)
+        self.pc += 3
+
+    def and_a_b(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        self.alu("AND", operand_a, operand_b)
         self.pc += 3
 
     # **********************************************
